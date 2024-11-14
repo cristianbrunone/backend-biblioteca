@@ -9,18 +9,16 @@ const connection = mysql.createConnection(config.db);
 class AdminRepository extends AdminRepositoryInterface {
     // Crear un administrador
     async create(adminEntity) {
-        const query = 'INSERT INTO administrador (username, senha_hash) VALUES (?, ?)';
+        const query = 'INSERT INTO administrador (username, senha_hash, role) VALUES (?, ?, ?)';
         try {
-            const [results] = await connection.promise().query(query, [adminEntity.username, adminEntity.passwordHash]);
+            const [results] = await connection.promise().query(query, [adminEntity.username, adminEntity.passwordHash, adminEntity.role || 'admin']);
             adminEntity.id = `admin-${results.insertId}`; // Asignar el ID generado por MySQL
             return adminEntity;
         } catch (err) {
-            // Manejo de error más detallado
             console.error(`Error al crear el administrador: ${err.message}`);
             throw new Error('Error al crear el administrador');
         }
     }
-
     // Obtener un administrador por ID
     async findById(id) {
         const query = 'SELECT * FROM administrador WHERE id_admin = ?';
@@ -45,7 +43,7 @@ class AdminRepository extends AdminRepositoryInterface {
         try {
             const [results] = await connection.promise().query(query, [username]);
             if (results.length > 0) {
-                const admin = new Admin(results[0].id_admin, results[0].username, results[0].senha_hash);
+                const admin = new Admin(results[0].id_admin, results[0].username, results[0].senha_hash, results[0].role);
                 return admin; // Devuelve el administrador si lo encuentra
             } else {
                 return null; // Si no se encuentra el administrador

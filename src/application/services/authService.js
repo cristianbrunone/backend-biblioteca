@@ -23,7 +23,13 @@ async function authenticateAdmin(username, password) {
         throw new Error('Contraseña incorrecta');
     }
 
-    const token = jwt.sign({ id: admin.id_admin, username: admin.username }, JWT_SECRET_KEY, { expiresIn: '1h' });
+    // Aquí incluimos el role del admin al payload del token
+    const token = jwt.sign({
+        id: admin.id_admin,
+        username: admin.username,
+        role: admin.role // Agregamos el role del admin
+    }, JWT_SECRET_KEY, { expiresIn: '1h' });
+
     return token;
 }
 

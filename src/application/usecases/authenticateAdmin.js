@@ -24,12 +24,13 @@ class AuthenticateAdmin {
             throw new Error('Contraseña incorrecta');
         }
 
-        // Generar el token JWT
+        // Generar el token JWT incluyendo el role
         const token = jwt.sign(
-            { id: admin.id, username: admin.username },
+            { id: admin.id, username: admin.username, role: admin.role }, // Agregar el role aquí
             JWT_SECRET_KEY,
-            { expiresIn: '1h' } // Puedes ajustar el tiempo de expiración si lo necesitas
+            { expiresIn: '1h' }
         );
+
 
         // Retornar el token junto con la respuesta del administrador
         return {
