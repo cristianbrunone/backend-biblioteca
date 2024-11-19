@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2');
+const cors = require('cors'); // Importa el paquete CORS
 const config = require('./infrastructure/config/dbConfig'); // Asegúrate de que esta es la ruta correcta
 
 // Crear la conexión con la base de datos
@@ -16,6 +17,9 @@ connection.connect((err) => {
 });
 
 const app = express();
+
+// Habilitar CORS para todas las solicitudes
+app.use(cors()); // Permite solicitudes de cualquier origen (puedes configurarlo más específicamente si es necesario)
 
 // Middleware para parsear el cuerpo de las solicitudes
 app.use(bodyParser.json());

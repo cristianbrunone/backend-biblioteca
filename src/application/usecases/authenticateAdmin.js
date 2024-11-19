@@ -3,7 +3,6 @@ require('dotenv').config({ path: '../../.env' });
 const bcrypt = require('bcrypt'); // Para comparar contraseñas hash
 const jwt = require('jsonwebtoken'); // Asegúrate de tener este paquete instalado
 
-
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
 // Caso de uso para la autenticación del administrador
@@ -14,6 +13,13 @@ class AuthenticateAdmin {
 
     async execute(username, password) {
         const admin = await this.adminRepository.findByUsername(username);
+
+        // Log para verificar si se encontró el administrador
+        if (admin) {
+            console.log(`Administrador encontrado: ${admin.username}`);
+        } else {
+            console.log(`Administrador no encontrado: ${username}`);
+        }
 
         if (!admin) {
             throw new Error('Administrador no encontrado');
@@ -30,7 +36,6 @@ class AuthenticateAdmin {
             JWT_SECRET_KEY,
             { expiresIn: '1h' }
         );
-
 
         // Retornar el token junto con la respuesta del administrador
         return {
