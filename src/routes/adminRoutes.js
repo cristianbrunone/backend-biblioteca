@@ -5,6 +5,7 @@ const AdminRequest = require('../application/request/AdminRequest');  // Importa
 const AdminResponse = require('../application/response/adminResponse');
 const AuthenticateAdmin = require('../application/usecases/authenticateAdmin'); // Importar el caso de uso
 const { isAuthenticatedAdmin, isSuperAdmin } = require('../infrastructure/middleware/authMiddleware');
+const bcrypt = require('bcrypt');
 
 // Instancia del repositorio
 const adminRepository = new AdminRepository();
@@ -56,24 +57,31 @@ module.exports = function (adminRouter) {
         }
     });
 
-    // Ruta para registrar un nuevo administrador, solo accesible por un superadmin
     adminRouter.post('/admin/register', isAuthenticatedAdmin, isSuperAdmin, async (req, res) => {
         try {
             const { username, password, role } = req.body; // Asegúrate de que estos campos estén presentes en el cuerpo de la solicitud
 
-            // Aquí puedes crear un AdminRequest
-            const adminRequest = new AdminRequest(username, password, role);  // Pasa los valores correctamente
-            const admin = adminRequest.toDomain(); // Convertir a la entidad Admin
+            if (!username || !password || !role) {
+                return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
+            }
 
-            // Crea el administrador en la base de datos (repositorio)
+            // Hashear la contraseña
+            const hashedPassword = await bcrypt.hash(password, 10); // Salting con 10 rondas
+
+            // Crear la instancia del administrador
+            const adminRequest = new AdminRequest(username, hashedPassword, role); // Usa la contraseña hasheada
+            const admin = adminRequest.toDomain();
+
+            // Guardar en la base de datos
             const createdAdmin = await adminRepository.create(admin);
 
-            // Retornar el admin creado como respuesta (AdminResponse)
+            // Responder con éxito
             const adminResponse = new AdminResponse(createdAdmin);
-            res.status(201).json(adminResponse); // Crear un nuevo administrador
+            res.status(201).json(adminResponse);
         } catch (error) {
-            console.error(error);
+            console.error('Error al registrar el administrador:', error);
             res.status(500).json({ message: 'Error al registrar el administrador' });
         }
     });
+
 };
