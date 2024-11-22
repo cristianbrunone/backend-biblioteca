@@ -2,7 +2,7 @@
 
 const AdminRepository = require('../infrastructure/repository/adminRepositoryImpl'); // Correcta importación
 const AdminRequest = require('../application/request/AdminRequest');  // Importación correcta
-const AdminResponse = require('../application/response/adminResponse');
+const AdminResponse = require('../application/response/AdminResponse');
 const AuthenticateAdmin = require('../application/usecases/authenticateAdmin'); // Importar el caso de uso
 const { isAuthenticatedAdmin, isSuperAdmin } = require('../infrastructure/middleware/authMiddleware');
 const bcrypt = require('bcrypt');

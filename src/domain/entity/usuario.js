@@ -1,9 +1,9 @@
 class Usuario {
-    constructor(id, nome, idade, contatoResponsavel) {
+    constructor(id, nome, idade, contato_responsavel) {
         this.id = id;
         this.nome = nome;
         this.idade = idade;
-        this.contatoResponsavel = contatoResponsavel;
+        this.contato_responsavel = contato_responsavel;
     }
 
     // Método para convertir la entidad a una respuesta estructurada
@@ -12,7 +12,7 @@ class Usuario {
             id: this.id,
             nome: this.nome,
             idade: this.idade,
-            contatoResponsavel: this.contatoResponsavel,
+            contato_responsavel: this.contato_responsavel,
         };
     }
 }
