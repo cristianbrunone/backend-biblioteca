@@ -1,6 +1,8 @@
 // Importar las rutas de admin
 const adminRoutes = require('../routes/adminRoutes');
 const usuarioRoutes = require('../routes/usuarioRoutes');
+const livroRoutes = require('../routes/livroRoutes');
+const emprestimoRoutes = require('../routes/emprestimoRoutes');
 
 // Función que configura todas las rutas
 module.exports = function (app) {
@@ -11,9 +13,17 @@ module.exports = function (app) {
     const usuarioRouter = require('express').Router();
     usuarioRoutes(usuarioRouter);
 
-    // Aquí, eliminamos el prefijo '/usuario'
-    app.use('/api/', usuarioRouter); // Cambiado de '/api/usuario' a '/api'
+    const livroRouter = require('express').Router();
+    livroRoutes(livroRouter);
 
-    // Usar el enrutador de admin en el prefijo '/api'
+    const emprestimoRouter = require('express').Router();
+    emprestimoRoutes(emprestimoRouter);
+
+    app.use('/api/', usuarioRouter); 
+
     app.use('/api', adminRouter);
+
+    app.use('/api', livroRouter);
+    
+    app.use('/api', emprestimoRouter);
 };

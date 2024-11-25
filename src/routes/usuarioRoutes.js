@@ -10,27 +10,43 @@ const usuarioRepository = new UsuarioRepository();
 
 module.exports = function (usuarioRouter) {
     // Ruta para registrar un usuario
-    usuarioRouter.post('/usuario/register', isAuthenticatedAdmin, async (req, res) => {
+       usuarioRouter.post('/usuario/register', isAuthenticatedAdmin, async (req, res) => {
         try {
+            console.log(req.body); // Verificar los datos recibidos
+
             const { nome, idade, contato_responsavel } = req.body;
 
+            // Verificación de los datos antes de continuar
             if (!nome || !idade || !contato_responsavel) {
+                console.error('Faltan campos obligatorios:', { nome, idade, contato_responsavel });
                 return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
             }
 
+            // Crear objeto UsuarioRequest
             const usuarioRequest = new UsuarioRequest(nome, idade, contato_responsavel);
+
+            // Verificar que el objeto UsuarioRequest tiene los valores correctos
+            console.log('UsuarioRequest:', usuarioRequest);
+
+            // Crear el dominio Usuario
             const usuario = usuarioRequest.toDomain();
 
+            // Verificar el objeto Usuario antes de pasarlo al repositorio
+            console.log('Usuario creado desde UsuarioRequest:', usuario);
+
+            // Llamar al repositorio para crear el usuario
             const createdUsuario = await usuarioRepository.create(usuario);
 
+            // Crear respuesta para el usuario creado
             const usuarioResponse = new UsuarioResponse(createdUsuario);
+
+            // Enviar respuesta exitosa
             res.status(201).json(usuarioResponse);
         } catch (error) {
             console.error('Error al registrar el usuario:', error);
             res.status(500).json({ message: 'Error al registrar el usuario' });
         }
     });
-
     // Ruta para obtener un usuario por ID
     usuarioRouter.get('/usuario/:id', isAuthenticatedAdmin, async (req, res) => {
         try {

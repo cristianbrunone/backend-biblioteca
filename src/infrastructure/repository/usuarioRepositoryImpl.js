@@ -10,8 +10,9 @@ class UsuarioRepository extends UsuarioRepositoryInterface {
     // Crear un usuario
     async create(usuarioEntity) {
         const query = 'INSERT INTO usuarios (nome, idade, contato_responsavel) VALUES (?, ?, ?)';
+       
         try {
-            const [results] = await connection.promise().query(query, [usuarioEntity.nome, usuarioEntity.idade, usuarioEntity.contatoResponsavel]);
+            const [results] = await connection.promise().query(query, [usuarioEntity.nome, usuarioEntity.idade, usuarioEntity.contato_responsavel]);
             usuarioEntity.id = `usuario-${results.insertId}`; // Asignar el ID generado por MySQL
             return usuarioEntity;
         } catch (err) {
@@ -39,7 +40,8 @@ class UsuarioRepository extends UsuarioRepositoryInterface {
     async update(id, usuarioEntity) {
         const query = 'UPDATE usuarios SET nome = ?, idade = ?, contato_responsavel = ? WHERE id = ?';
         try {
-            const [results] = await connection.promise().query(query, [usuarioEntity.nome, usuarioEntity.idade, usuarioEntity.contatoResponsavel, id]);
+            const [results] = await connection.promise().query(query, [usuarioEntity.nome, usuarioEntity.idade, usuarioEntity.contato_responsavel,
+                id]);
             if (results.affectedRows === 0) {
                 throw new Error('Usuario no encontrado');
             }
@@ -67,19 +69,20 @@ class UsuarioRepository extends UsuarioRepositoryInterface {
     }
 
     // Leer todos los usuarios
-    async readAll() {
-        const query = 'SELECT * FROM usuarios';
-        try {
-            const [rows] = await connection.promise().query(query);
-            if (rows.length === 0) {
-                throw new Error('No hay usuarios registrados');
-            }
-            return rows.map(row => new Usuario(row.id, row.nome, row.idade, row.contato_responsavel)); // Mapea los resultados al objeto Usuario
-        } catch (err) {
-            console.error(`Error al leer todos los usuarios: ${err.message}`);
-            throw new Error('Error al leer todos los usuarios');
+async readAll() {
+    const query = 'SELECT id_usuario AS id, nome, idade, contato_responsavel FROM usuarios';
+    try {
+        const [rows] = await connection.promise().query(query);
+        if (rows.length === 0) {
+            throw new Error('No hay usuarios registrados');
         }
+        return rows.map(row => new Usuario(row.id, row.nome, row.idade, row.contato_responsavel)); // Incluye el ID en el objeto Usuario
+    } catch (err) {
+        console.error(`Error al leer todos los usuarios: ${err.message}`);
+        throw new Error('Error al leer todos los usuarios');
     }
+}
+
 }
 
 module.exports = UsuarioRepository;

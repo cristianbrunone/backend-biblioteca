@@ -1,0 +1,44 @@
+/*
+
+SELECT 
+    l.titulo, 
+    l.autor, 
+    u.nome AS nome_usuario,
+    e.data_emprestimo, 
+    e.data_devolucao
+FROM emprestimos e
+JOIN livros_has_emprestimos lhe ON e.id_emprestimo = lhe.emprestimos_id_emprestimo
+JOIN livros l ON l.id_livro = lhe.livros_id_livro
+JOIN usuarios u ON u.id_usuario = e.id_usuario
+WHERE e.data_devolucao IS NULL;  -- Para listar somente os livros que ainda não foram devolvidos
+Agora, você pode adicionar um método no seu repositório de empréstimos que execute essa consulta. O código ficaria assim:
+
+javascript
+Copiar código
+async listarLivrosEmprestados() {
+    const query = `
+        SELECT 
+            l.titulo, 
+            l.autor, 
+            u.nome AS nome_usuario,
+            e.data_emprestimo, 
+            e.data_devolucao
+        FROM emprestimos e
+        JOIN livros_has_emprestimos lhe ON e.id_emprestimo = lhe.emprestimos_id_emprestimo
+        JOIN livros l ON l.id_livro = lhe.livros_id_livro
+        JOIN usuarios u ON u.id_usuario = e.id_usuario
+        WHERE e.data_devolucao IS NULL;  -- Para listar somente os livros que ainda não foram devolvidos
+    `;
+    try {
+        const [results] = await connection.promise().query(query);
+        return results;  // Retorna a lista de livros emprestados com os dados do usuário
+    } catch (err) {
+        console.error(`Erro ao listar livros emprestados: ${err.message}`);
+        throw new Error('Erro ao listar livros emprestados');
+    }
+}
+
+
+
+
+*/

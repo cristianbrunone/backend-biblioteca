@@ -1,27 +1,32 @@
-class UsuarioRepositoryInterface {    // Crear un nuevo usuario
-    async create(usuarioEntity) {
+class LivroRepositoryInterface {
+    // Crear un nuevo usuario
+    async create(livroEntity) {
         throw new Error('Method "create" not implemented');
     }
 
-    // Leer un usuario por ID
+
     async read(id) {
         throw new Error('Method "read" not implemented');
     }
 
-    // Actualizar un usuario por ID
-    async update(id, usuarioEntity) {
+
+    async update(id, livroEntity) {
         throw new Error('Method "update" not implemented');
     }
 
-    // Eliminar un usuario por ID
+
     async delete(id) {
         throw new Error('Method "delete" not implemented');
     }
 
-    // Leer todos los usuarios (opcional)
+
     async readAll() {
         throw new Error('Method "readAll" not implemented');
     }
+
+    async findAvailableBooks() {
+        throw new Error('Method " findAvailableBooks" not implemented');
+    }
 }
 
-module.exports = UsuarioRepositoryInterface;
+module.exports = LivroRepositoryInterface;
