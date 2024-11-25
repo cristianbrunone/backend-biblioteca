@@ -4,10 +4,6 @@ class EmprestimoRepositoryInterface {
         throw new Error('Method "create" not implemented');
     }
 
-    async  findById(id, emprestimoEntity) {
-        throw new Error('Method "update" not implemented');
-    }
-
       async update(id, emprestimoEntity) {
         throw new Error('Method "update" not implemented');
     }
@@ -25,13 +21,10 @@ class EmprestimoRepositoryInterface {
         throw new Error('Method "readAll" not implemented');
     }
 
-       async findActiveByLivro() {
-        throw new Error('Method "findActiveByLivro" not implemented');
+     async  listarEmprestimosAtivos() {
+        throw new Error('Method "listarEmprestimosAtivos" not implemented');
     }
-
-       async findLastByLivro() {
-        throw new Error('Method "findLastByLivro" not implemented');
-    }
+    
 
 }
 

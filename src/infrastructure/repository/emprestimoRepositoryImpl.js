@@ -25,33 +25,21 @@ class EmprestimosRepository extends EmprestimoRepositoryInterface {
         }
     }
 
+    // Associar livro ao empréstimo
     async associateLivroToEmprestimo(id_emprestimo, id_livro) {
-    try {
-        const query = `
-            INSERT INTO livros_has_emprestimos (livros_id_livro, emprestimos_id_emprestimo)
-            VALUES (?, ?);
-        `;
-        // Ejecutas la query con los valores correspondientes
-        await connection.promise().query(query, [id_livro, id_emprestimo]);
-        console.log(`Livro ${id_livro} associado ao empréstimo ${id_emprestimo}`);
-    } catch (error) {
-        console.error('Erro ao associar livro ao empréstimo:', error.message);
-        throw new Error('Erro ao associar livro ao empréstimo.');
-    }
-}
-
-
-    // Obter empréstimo por ID
-    async findById(id) {
-        const query = 'SELECT * FROM emprestimos WHERE id_emprestimo = ?';
         try {
-            const [results] = await connection.promise().query(query, [id]);
-            return results.length > 0 ? results[0] : null;
-        } catch (err) {
-            console.error(`Erro ao buscar empréstimo: ${err.message}`);
-            throw new Error('Erro ao buscar empréstimo');
+            const query = `
+                INSERT INTO livros_has_emprestimos (livros_id_livro, emprestimos_id_emprestimo)
+                VALUES (?, ?);
+            `;
+            await connection.promise().query(query, [id_livro, id_emprestimo]);
+            console.log(`Livro ${id_livro} associado ao empréstimo ${id_emprestimo}`);
+        } catch (error) {
+            console.error('Erro ao associar livro ao empréstimo:', error.message);
+            throw new Error('Erro ao associar livro ao empréstimo.');
         }
     }
+
 
     // Atualizar empréstimo
     async update(id, updatedFields) {
@@ -79,25 +67,60 @@ class EmprestimosRepository extends EmprestimoRepositoryInterface {
         }
     }
 
-    // Finalizar empréstimo (devolução)
     async finalizarEmprestimo(id) {
-        const query = `
-            UPDATE emprestimos 
-            SET data_devolucao = CURDATE()
-            WHERE id_emprestimo = ? AND data_devolucao IS NULL
-        `;
-        try {
-            const [results] = await connection.promise().query(query, [id]);
-            if (results.affectedRows > 0) {
-                return true; // Sucesso
-            } else {
-                throw new Error('Empréstimo não encontrado ou já devolvido');
-            }
-        } catch (err) {
-            console.error(`Erro ao finalizar empréstimo: ${err.message}`);
-            throw new Error('Erro ao finalizar empréstimo');
+    // Consulta para verificar se o empréstimo existe
+    const verificarEmprestimoQuery = `
+        SELECT id_emprestimo, data_devolucao 
+        FROM emprestimos 
+        WHERE id_emprestimo = ?;
+    `;
+
+    // Consulta para atualizar a data de devolução
+    const finalizarEmprestimoQuery = `
+        UPDATE emprestimos 
+        SET data_devolucao = CURDATE()
+        WHERE id_emprestimo = ?;
+    `;
+
+    // Consulta para remover associações de livros
+    const verificarAssociacoesQuery = `
+        DELETE FROM livros_has_emprestimos
+        WHERE emprestimos_id_emprestimo = ?;
+    `;
+
+    // Inicia a transação
+    await connection.promise().beginTransaction();
+
+    try {
+        // Verifica se o empréstimo existe
+        const [emprestimo] = await connection.promise().query(verificarEmprestimoQuery, [id]);
+        if (emprestimo.length === 0) {
+            throw new Error('Empréstimo não encontrado.');
         }
+
+        // Atualiza a data de devolução para a data atual
+        const [results] = await connection.promise().query(finalizarEmprestimoQuery, [id]);
+        if (results.affectedRows === 0) {
+            throw new Error('Erro ao finalizar o empréstimo.');
+        }
+
+        // Remove a associação do livro ao empréstimo
+        await connection.promise().query(verificarAssociacoesQuery, [id]);
+
+        // Confirma a transação
+        await connection.promise().commit();
+
+        console.log(`Empréstimo ${id} finalizado e associação de livros removida.`);
+        return true; // Sucesso
+    } catch (err) {
+        // Reverte a transação em caso de erro
+        await connection.promise().rollback();
+        console.error(`Erro ao finalizar empréstimo: ${err.message}`);
+        throw new Error('Erro ao finalizar empréstimo');
     }
+}
+
+
 
     // Listar todos os empréstimos
     async findAll() {
@@ -111,34 +134,34 @@ class EmprestimosRepository extends EmprestimoRepositoryInterface {
         }
     }
 
-    
-      async findActiveByLivro(id_livro) {
+    // Listar empréstimos ativos
+    async listarEmprestimosAtivos() {
         const query = `
-            SELECT * FROM emprestimos
-            WHERE id_livro = ?
-            AND data_devolucao IS NULL
+            SELECT 
+                e.id_emprestimo, 
+                e.id_usuario, 
+                e.data_emprestimo, 
+                e.data_devolucao, 
+                l.titulo AS nome_livro,
+                u.nome AS nome_usuario
+            FROM 
+                emprestimos e
+            JOIN 
+                livros_has_emprestimos le ON e.id_emprestimo = le.emprestimos_id_emprestimo
+            JOIN 
+                livros l ON le.livros_id_livro = l.id_livro
+            JOIN 
+                usuarios u ON e.id_usuario = u.id_usuario 
+
+            WHERE 
+                e.data_devolucao > CURDATE();
         `;
         try {
-            const [results] = await connection.promise().query(query, [id_livro]);
+            const [results] = await connection.promise().query(query);
             return results;
         } catch (err) {
-            console.error(`Erro ao verificar empréstimos ativos: ${err.message}`);
-            throw new Error('Erro ao verificar empréstimos ativos.');
-        }
-    }
-
-      async findLastByLivro(id_livro) {
-        const query = `
-            SELECT * FROM emprestimos
-            WHERE id_livro = ?
-            ORDER BY data_emprestimo DESC LIMIT 1
-        `;
-        try {
-            const [results] = await connection.promise().query(query, [id_livro]);
-            return results.length > 0 ? results[0] : null;
-        } catch (err) {
-            console.error(`Erro ao buscar o último empréstimo: ${err.message}`);
-            throw new Error('Erro ao buscar o último empréstimo.');
+            console.error(`Erro ao listar empréstimos ativos: ${err.message}`);
+            throw new Error('Erro ao listar empréstimos ativos');
         }
     }
 }

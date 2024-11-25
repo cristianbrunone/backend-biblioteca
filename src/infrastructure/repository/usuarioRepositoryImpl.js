@@ -1,10 +1,11 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
+
 const UsuarioRepositoryInterface = require('../../domain/ports/usuarioRepositoryInterface');
 const Usuario = require('../../domain/entity/usuario');
 const config = require('../../infrastructure/config/dbConfig'); // Asegúrate de que esta es la ruta correcta
 
-// Crear la conexión con la base de datos
-const connection = mysql.createConnection(config.db);
+// Crear un pool de conexiones en lugar de una conexión única
+const pool = mysql.createPool(config.db);  // Usar un pool de conexiones
 
 class UsuarioRepository extends UsuarioRepositoryInterface {
     // Crear un usuario
@@ -12,7 +13,7 @@ class UsuarioRepository extends UsuarioRepositoryInterface {
         const query = 'INSERT INTO usuarios (nome, idade, contato_responsavel) VALUES (?, ?, ?)';
        
         try {
-            const [results] = await connection.promise().query(query, [usuarioEntity.nome, usuarioEntity.idade, usuarioEntity.contato_responsavel]);
+            const [results] = await pool.execute(query, [usuarioEntity.nome, usuarioEntity.idade, usuarioEntity.contato_responsavel]);
             usuarioEntity.id = `usuario-${results.insertId}`; // Asignar el ID generado por MySQL
             return usuarioEntity;
         } catch (err) {
@@ -25,7 +26,7 @@ class UsuarioRepository extends UsuarioRepositoryInterface {
     async read(id) {
         const query = 'SELECT * FROM usuarios WHERE id_usuario = ?';
         try {
-            const [rows] = await connection.promise().query(query, [id]);
+            const [rows] = await pool.execute(query, [id]);
             if (rows.length === 0) {
                 throw new Error('Usuario no encontrado');
             }
@@ -40,8 +41,7 @@ class UsuarioRepository extends UsuarioRepositoryInterface {
     async update(id, usuarioEntity) {
         const query = 'UPDATE usuarios SET nome = ?, idade = ?, contato_responsavel = ? WHERE id = ?';
         try {
-            const [results] = await connection.promise().query(query, [usuarioEntity.nome, usuarioEntity.idade, usuarioEntity.contato_responsavel,
-                id]);
+            const [results] = await pool.execute(query, [usuarioEntity.nome, usuarioEntity.idade, usuarioEntity.contato_responsavel, id]);
             if (results.affectedRows === 0) {
                 throw new Error('Usuario no encontrado');
             }
@@ -54,35 +54,53 @@ class UsuarioRepository extends UsuarioRepositoryInterface {
     }
 
     // Eliminar un usuario por ID
-    async delete(id) {
-        const query = 'DELETE FROM usuarios WHERE id_usuario = ?';
-        try {
-            const [results] = await connection.promise().query(query, [id]);
-            if (results.affectedRows === 0) {
-                throw new Error('Usuario no encontrado');
-            }
-            return { message: 'Usuario eliminado exitosamente' };
-        } catch (err) {
-            console.error(`Error al eliminar el usuario: ${err.message}`);
-            throw new Error('Error al eliminar el usuario');
-        }
-    }
-
-    // Leer todos los usuarios
-async readAll() {
-    const query = 'SELECT id_usuario AS id, nome, idade, contato_responsavel FROM usuarios';
+async delete(id) {
+    const connection = await pool.getConnection();  // Obtener una conexión del pool
     try {
-        const [rows] = await connection.promise().query(query);
-        if (rows.length === 0) {
-            throw new Error('No hay usuarios registrados');
+        await connection.beginTransaction(); // Inicia una transacción
+
+        // Eliminar registros relacionados en livros_has_emprestimos
+        const deleteBookLoanQuery = 'DELETE FROM livros_has_emprestimos WHERE emprestimos_id_emprestimo IN (SELECT id_emprestimo FROM emprestimos WHERE id_usuario = ?)';
+        await connection.execute(deleteBookLoanQuery, [id]);
+
+        // Eliminar los registros de emprestimos
+        const deleteLoansQuery = 'DELETE FROM emprestimos WHERE id_usuario = ?';
+        await connection.execute(deleteLoansQuery, [id]);
+
+        // Eliminar el usuario
+        const deleteUserQuery = 'DELETE FROM usuarios WHERE id_usuario = ?';
+        const [results] = await connection.execute(deleteUserQuery, [id]);
+
+        if (results.affectedRows === 0) {
+            throw new Error('Usuario no encontrado');
         }
-        return rows.map(row => new Usuario(row.id, row.nome, row.idade, row.contato_responsavel)); // Incluye el ID en el objeto Usuario
+
+        await connection.commit(); // Confirma la transacción
+        return { message: 'Usuario eliminado exitosamente' };
     } catch (err) {
-        console.error(`Error al leer todos los usuarios: ${err.message}`);
-        throw new Error('Error al leer todos los usuarios');
+        await connection.rollback(); // Revierte la transacción en caso de error
+        console.error(`Error al eliminar el usuario: ${err.message}`);
+        throw new Error('Error al eliminar el usuario');
+    } finally {
+        connection.release();  // Libera la conexión del pool
     }
 }
 
+
+    // Leer todos los usuarios
+    async readAll() {
+        const query = 'SELECT id_usuario AS id, nome, idade, contato_responsavel FROM usuarios';
+        try {
+            const [rows] = await pool.execute(query);
+            if (rows.length === 0) {
+                throw new Error('No hay usuarios registrados');
+            }
+            return rows.map(row => new Usuario(row.id, row.nome, row.idade, row.contato_responsavel)); // Incluye el ID en el objeto Usuario
+        } catch (err) {
+            console.error(`Error al leer todos los usuarios: ${err.message}`);
+            throw new Error('Error al leer todos los usuarios');
+        }
+    }
 }
 
 module.exports = UsuarioRepository;

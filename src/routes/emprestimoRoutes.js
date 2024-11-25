@@ -37,23 +37,6 @@ module.exports = function (emprestimosRouter) {
         }
     });
 
-    // Obter empréstimo por ID
-    emprestimosRouter.get('/emprestimos/:id', isAuthenticatedAdmin, async (req, res) => {
-        try {
-            const { id } = req.params;
-            const emprestimo = await emprestimoRepository.findById(id);
-
-            if (!emprestimo) {
-                return res.status(404).json({ message: 'Empréstimo não encontrado' });
-            }
-
-            res.status(200).json(emprestimo);
-        } catch (error) {
-            console.error('Erro ao buscar empréstimo:', error.message);
-            res.status(500).json({ message: 'Erro ao buscar empréstimo' });
-        }
-    });
-
     // Finalizar empréstimo (devolução)
     emprestimosRouter.put('/emprestimos/:id/finalizar', isAuthenticatedAdmin, async (req, res) => {
         try {
@@ -77,39 +60,23 @@ module.exports = function (emprestimosRouter) {
             res.status(500).json({ message: 'Erro ao listar empréstimos' });
         }
     });
+    
 
-
-        // Listar empréstimos ativos por livro
-    emprestimosRouter.get('/emprestimos/ativos/:id_livro', isAuthenticatedAdmin, async (req, res) => {
+    // Listar empréstimos ativos
+    emprestimosRouter.get('/emprestimos/ativos', isAuthenticatedAdmin, async (req, res) => {
         try {
-            const { id_livro } = req.params;
-            const emprestimosAtivos = await emprestimoRepository.findActiveByLivro(id_livro);
-
-            if (emprestimosAtivos.length === 0) {
-                return res.status(404).json({ message: 'Nenhum empréstimo ativo encontrado para este livro' });
-            }
+           
+        
+            const emprestimosAtivos = await emprestimoRepository.listarEmprestimosAtivos();
+            
+          
 
             res.status(200).json(emprestimosAtivos);
         } catch (error) {
-            console.error('Erro ao buscar empréstimos ativos:', error.message);
-            res.status(500).json({ message: 'Erro ao buscar empréstimos ativos' });
+            // Log de erro
+            console.error('Erro ao listar empréstimos ativos:', error.message);
+            res.status(500).json({ message: 'Erro ao listar empréstimos ativos' });
         }
     });
 
-    // Obter o último empréstimo de um livro
-    emprestimosRouter.get('/emprestimos/ultimo/:id_livro', isAuthenticatedAdmin, async (req, res) => {
-        try {
-            const { id_livro } = req.params;
-            const ultimoEmprestimo = await emprestimoRepository.findLastByLivro(id_livro);
-
-            if (!ultimoEmprestimo) {
-                return res.status(404).json({ message: 'Nenhum empréstimo encontrado para este livro' });
-            }
-
-            res.status(200).json(ultimoEmprestimo);
-        } catch (error) {
-            console.error('Erro ao buscar último empréstimo:', error.message);
-            res.status(500).json({ message: 'Erro ao buscar último empréstimo' });
-        }
-    });
 };
