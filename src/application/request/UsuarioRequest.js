@@ -9,7 +9,7 @@ class UsuarioRequest {
     toDomain() {
         const { nome, idade, contato_responsavel } = this;
         const Usuario = require('../../domain/entity/usuario');
-        return new Usuario(nome, idade, contato_responsavel);
+        return new Usuario(null ,nome, idade, contato_responsavel);
     }
 
 
