@@ -68,57 +68,57 @@ class EmprestimosRepository extends EmprestimoRepositoryInterface {
     }
 
     async finalizarEmprestimo(id) {
-    // Consulta para verificar se o empréstimo existe
-    const verificarEmprestimoQuery = `
+        // Consulta para verificar se o empréstimo existe
+        const verificarEmprestimoQuery = `
         SELECT id_emprestimo, data_devolucao 
         FROM emprestimos 
         WHERE id_emprestimo = ?;
     `;
 
-    // Consulta para atualizar a data de devolução
-    const finalizarEmprestimoQuery = `
+        // Consulta para atualizar a data de devolução
+        const finalizarEmprestimoQuery = `
         UPDATE emprestimos 
         SET data_devolucao = CURDATE()
         WHERE id_emprestimo = ?;
     `;
 
-    // Consulta para remover associações de livros
-    const verificarAssociacoesQuery = `
+        // Consulta para remover associações de livros
+        const verificarAssociacoesQuery = `
         DELETE FROM livros_has_emprestimos
         WHERE emprestimos_id_emprestimo = ?;
     `;
 
-    // Inicia a transação
-    await connection.promise().beginTransaction();
+        // Inicia a transação
+        await connection.promise().beginTransaction();
 
-    try {
-        // Verifica se o empréstimo existe
-        const [emprestimo] = await connection.promise().query(verificarEmprestimoQuery, [id]);
-        if (emprestimo.length === 0) {
-            throw new Error('Empréstimo não encontrado.');
+        try {
+            // Verifica se o empréstimo existe
+            const [emprestimo] = await connection.promise().query(verificarEmprestimoQuery, [id]);
+            if (emprestimo.length === 0) {
+                throw new Error('Empréstimo não encontrado.');
+            }
+
+            // Atualiza a data de devolução para a data atual
+            const [results] = await connection.promise().query(finalizarEmprestimoQuery, [id]);
+            if (results.affectedRows === 0) {
+                throw new Error('Erro ao finalizar o empréstimo.');
+            }
+
+            // Remove a associação do livro ao empréstimo
+            await connection.promise().query(verificarAssociacoesQuery, [id]);
+
+            // Confirma a transação
+            await connection.promise().commit();
+
+            console.log(`Empréstimo ${id} finalizado e associação de livros removida.`);
+            return true; // Sucesso
+        } catch (err) {
+            // Reverte a transação em caso de erro
+            await connection.promise().rollback();
+            console.error(`Erro ao finalizar empréstimo: ${err.message}`);
+            throw new Error('Erro ao finalizar empréstimo');
         }
-
-        // Atualiza a data de devolução para a data atual
-        const [results] = await connection.promise().query(finalizarEmprestimoQuery, [id]);
-        if (results.affectedRows === 0) {
-            throw new Error('Erro ao finalizar o empréstimo.');
-        }
-
-        // Remove a associação do livro ao empréstimo
-        await connection.promise().query(verificarAssociacoesQuery, [id]);
-
-        // Confirma a transação
-        await connection.promise().commit();
-
-        console.log(`Empréstimo ${id} finalizado e associação de livros removida.`);
-        return true; // Sucesso
-    } catch (err) {
-        // Reverte a transação em caso de erro
-        await connection.promise().rollback();
-        console.error(`Erro ao finalizar empréstimo: ${err.message}`);
-        throw new Error('Erro ao finalizar empréstimo');
     }
-}
 
 
 
@@ -164,6 +164,42 @@ class EmprestimosRepository extends EmprestimoRepositoryInterface {
             throw new Error('Erro ao listar empréstimos ativos');
         }
     }
+
+
+    async listarEmprestimosInativosEAtivos() {
+        const query = `
+                    SELECT 
+    e.id_emprestimo, 
+    e.id_usuario, 
+    e.data_emprestimo, 
+    e.data_devolucao, 
+    IFNULL(l.titulo, 'Livro devolvido') AS nome_livro,  -- Substitui null por 'Livro devolvido'
+    u.nome AS nome_usuario,
+    CASE 
+        WHEN e.data_devolucao IS NULL THEN 'Ativo' -- Empréstimos sem data de devolução são ativos
+        WHEN e.data_devolucao > CURDATE() THEN 'Ativo' -- Empréstimos com devolução futura são ativos
+        ELSE 'Inativo' -- Empréstimos com devolução passada são inativos
+    END AS status
+FROM 
+    emprestimos e
+LEFT JOIN 
+    livros_has_emprestimos le ON e.id_emprestimo = le.emprestimos_id_emprestimo
+LEFT JOIN 
+    livros l ON le.livros_id_livro = l.id_livro
+LEFT JOIN 
+    usuarios u ON e.id_usuario = u.id_usuario;
+
+
+    `;
+        try {
+            const [results] = await connection.promise().query(query);
+            return results;
+        } catch (err) {
+            console.error(`Erro ao listar empréstimos ativos e inativos: ${err.message}`);
+            throw new Error('Erro ao listar empréstimos ativos e inativos');
+        }
+    }
+
 }
 
 module.exports = EmprestimosRepository;

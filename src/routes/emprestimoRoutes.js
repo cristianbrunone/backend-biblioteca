@@ -80,4 +80,16 @@ module.exports = function (emprestimosRouter) {
         }
     });
 
+    // Listar empréstimos ativos e inativos
+    emprestimosRouter.get('/emprestimos/ativoseinativos', isAuthenticatedAdmin, async (req, res) => {
+        try {
+            const emprestimosAtivosEInativos = await emprestimoRepository.listarEmprestimosInativosEAtivos();
+            res.status(200).json(emprestimosAtivosEInativos);
+        } catch (error) {
+            console.error('Erro ao listar empréstimos ativos e inativos:', error.message);
+            res.status(500).json({ message: 'Erro ao listar empréstimos ativos e inativos' });
+        }
+    });
+
+
 };
