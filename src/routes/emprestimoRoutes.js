@@ -41,6 +41,7 @@ module.exports = function (emprestimosRouter) {
     emprestimosRouter.put('/emprestimos/:id/finalizar', isAuthenticatedAdmin, async (req, res) => {
         try {
             const { id } = req.params;
+            console.log(`ID recebido no backend: ${id}`); // Adicione este log
             const resultado = await emprestimoRepository.finalizarEmprestimo(id);
 
             res.status(200).json({ message: 'Empréstimo finalizado com sucesso' });
@@ -60,16 +61,16 @@ module.exports = function (emprestimosRouter) {
             res.status(500).json({ message: 'Erro ao listar empréstimos' });
         }
     });
-    
+
 
     // Listar empréstimos ativos
     emprestimosRouter.get('/emprestimos/ativos', isAuthenticatedAdmin, async (req, res) => {
         try {
-           
-        
+
+
             const emprestimosAtivos = await emprestimoRepository.listarEmprestimosAtivos();
-            
-          
+
+
 
             res.status(200).json(emprestimosAtivos);
         } catch (error) {
